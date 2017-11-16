@@ -2,8 +2,9 @@ package main
 
 import "fmt"
 import "os"
-import "io/ioutil"
+// import "io/ioutil"
 import "bufio"
+import "strings"
 
 func check(e error){
 	if e != nil {
@@ -13,40 +14,63 @@ func check(e error){
 
 func main() {
 
-	// Read and print the entire file
-    dat, err := ioutil.ReadFile("problems.csv")
-    check(err)
-    fmt.Print(string(dat))
+	reader := bufio.NewReader(os.Stdin)
 
+	type quizItem struct {
+		question 		string
+		expectedAnswer 	string
+		actualAnswer 	string
+	}
+	
+	quiz := make([]quizItem,0)
+	score := 0
+	
+	
+	
 	fmt.Println("Starting the read")
 	f, err := os.Open("problems.csv")
 	check(err)
 	defer f.Close()
 	
 
-	theBytes := make([]byte, 5)
-	newBytes, err := f.Read(theBytes)
-	check(err)
-	fmt.Printf("%d bytes: %s\n", newBytes, string(theBytes))
-
+	// Move back to the start of file to run method two
 	_, err = f.Seek(0, 0)
     check(err)
-
-	newRead := bufio.NewReader(f)
-	buffRead, err := newRead.Peek(5)
-	check(err)
-	fmt.Printf("5 bytes: %s\n", string(buffRead))
-
-	_, err = f.Seek(0, 0)
-	check(err)
 	
 	// reads the entire file and splits it by line.
 	scanner := bufio.NewScanner(f)
 	scanner.Split(bufio.ScanLines)
 	
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	  }
 
+		
+		splitQ := strings.Split(scanner.Text(),",")
+		theQuestion := splitQ[0]
+		fmt.Println(theQuestion)
+		theExpectedAnswer := splitQ[1]
+		theAnswer, err := reader.ReadString('\n')
+		theAnswer = strings.Replace(theAnswer, "\n", "", -1)
+
+		if err != nil {
+			println(err)
+		}
+
+		if theExpectedAnswer == theAnswer {
+			score++
+		}
+		
+		quiz = append(quiz, quizItem{
+			question: theQuestion,
+			expectedAnswer: theExpectedAnswer,
+			actualAnswer: theAnswer,
+		})	
+		
+		
+
+
+		// fmt.Println(scanner.Text())
+
+	  }
+	  fmt.Printf("You scored %d out of a possible %d \n", score, len(quiz))
 
 }
