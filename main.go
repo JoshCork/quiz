@@ -21,18 +21,11 @@ type QuizItem struct {
 	questionScore 	int
 }
 
-func calcScore (results []QuizItem) {
-	totalScore := 0
-	for _,item := range results {
-		totalScore += item.questionScore
-	} 
-	fmt.Printf("You scored %d out of a possible %d \n", totalScore, len(results))
-}
-
 func main() {	
 	
 	
-	fnPtr := flag.String("fileName", "problems.csv", "name of the file in root that contains the quiz")	
+	fnPtr := flag.String("fileName", "problems.csv", "name of the file in root that contains the quiz")
+	timeLimitPtr := flag.Int("timeLimit", 10, "the amount of time in seconds that you want to set as a limit for the quiz")	
 	quizBegin := bufio.NewScanner(os.Stdin)
 	quiz := make([]QuizItem,0)	
 	
@@ -71,7 +64,7 @@ func main() {
 			// Move back to the start of file to run method two
 			_, err = f.Seek(0, 0)
 			check(err)		
-			giveQuiz(quiz)			
+			giveQuiz(&quiz, *timeLimitPtr)			
 			break
 		}
 	}
@@ -80,64 +73,37 @@ func main() {
 
 }
 
-func giveQuiz(quizFile []QuizItem) {
+func giveQuiz(quizFile *[]QuizItem, timeLimit int) {
 
-	quizTimer := time.NewTimer(time.Second * 5)	
+	quizTimer := time.NewTimer(time.Second * time.Duration(timeLimit))		
+	totalScore := 0
 
-	for i, item := range quizFile {
-		fmt.Printf("Question #%d: %s\n", i+1, item.question)
+	for i, item := range *quizFile {
+		fmt.Printf("Question #%d: %s = \n", i+1, item.question)
 		answerCh := make(chan string)
 
 		go func() {
 			var actualAnswer string
 			fmt.Scanf("%s\n", &actualAnswer)
+			answerCh <- actualAnswer
 		}()
 
 		select {
 		case <- quizTimer.C:
 			fmt.Printf("\nThe quiz timer has expired.\n")
-			calcScore(quizFile)
+			fmt.Printf("You scored %d out of a possible %d \n", totalScore, len(*quizFile))
 			return		
 		case actualAnswer := <-answerCh:
+			fmt.Printf("\nactual answer: %s | expected answer: %s\n", actualAnswer, item.expectedAnswer)
 			if actualAnswer == item.expectedAnswer {
-				item.questionScore = 1
+				totalScore++
 			}
+			
 		}
 
 	}
 
-	calcScore(quizFile)
-		
-		// for scanner.Scan() {
-		// 	select {
-		// 	case <-quizTimer.C:
-		// 		fmt.Println("quiz timer has expired.")
-		// 		return
-		// 	default:
-		// 		score := 0			
-				
-		// 		fmt.Println(theQuestion)
-				
-		// 		theAnswer, err := reader.ReadString('\n')
-		// 		theAnswer = strings.Replace(theAnswer, "\n", "", -1)
-		
-		// 		if err != nil {
-		// 			println(err)
-		// 		}
-		
-		// 		if theExpectedAnswer == theAnswer {
-		// 			score++
-		// 		}
-				
-					
-		// 	}
-	
-		// 	// fmt.Println(scanner.Text())
-	
-		// }
-		
-		// calcScore(quiz)	
-	
+	fmt.Printf("You scored %d out of a possible %d \n", totalScore, len(*quizFile))
 
 }
 
